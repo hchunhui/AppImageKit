@@ -34,6 +34,7 @@ set(USE_SYSTEM_MKSQUASHFS OFF CACHE BOOL "Use system mksquashfs instead of downl
 
 if(NOT USE_SYSTEM_MKSQUASHFS)
     set(mksquashfs_cflags "-DXZ_SUPPORT ${CFLAGS}")
+    set(mksquashfs_zstd_cflags "-DZSTD_SUPPORT")
 
     if(NOT xz_LIBRARIES OR xz_LIBRARIES STREQUAL "")
         message(FATAL_ERROR "xz_LIBRARIES not set")
@@ -50,15 +51,32 @@ if(NOT USE_SYSTEM_MKSQUASHFS)
         set(mksquashfs_ldflags "${mksquashfs_ldflags} -L${xz_LIBRARY_DIRS}")
     endif()
 
+    if(NOT zstd_LIBRARIES OR zstd_LIBRARIES STREQUAL "")
+        message(FATAL_ERROR "zstd_LIBRARIES not set")
+    elseif(zstd_LIBRARIES MATCHES "\\.a$")
+        set(mksquashfs_zstd_ldflags "${zstd_LIBRARIES}")
+    else()
+        set(mksquashfs_zstd_ldflags "-l${zstd_LIBRARIES}")
+    endif()
+
+    if(zstd_INCLUDE_DIRS)
+        set(mksquashfs_zstd_cflags "${mksquashfs_zstd_cflags} -I${zstd_INCLUDE_DIRS}")
+    endif()
+    if(zstd_LIBRARY_DIRS)
+        set(mksquashfs_zstd_ldflags "${mksquashfs_zstd_ldflags} -L${zstd_LIBRARY_DIRS}")
+    endif()
+
     ExternalProject_Add(mksquashfs
         GIT_REPOSITORY https://github.com/plougher/squashfs-tools/
         GIT_TAG 4.4
         UPDATE_COMMAND ""  # Make sure CMake won't try to fetch updates unnecessarily and hence rebuild the dependency every time
         CONFIGURE_COMMAND ${SED} -i "s|CFLAGS += -DXZ_SUPPORT|CFLAGS += ${mksquashfs_cflags}|g" <SOURCE_DIR>/squashfs-tools/Makefile
+        COMMAND ${SED} -i "s|CFLAGS += -DZSTD_SUPPORT|CFLAGS += ${mksquashfs_zstd_cflags}|g" <SOURCE_DIR>/squashfs-tools/Makefile
         COMMAND ${SED} -i "s|LIBS += -llzma|LIBS += -Bstatic ${mksquashfs_ldflags}|g" <SOURCE_DIR>/squashfs-tools/Makefile
+        COMMAND ${SED} -i "s|LIBS += -lzstd|LIBS += -Bstatic ${mksquashfs_zstd_ldflags}|g" <SOURCE_DIR>/squashfs-tools/Makefile
         COMMAND ${SED} -i "s|install: mksquashfs unsquashfs|install: mksquashfs|g" squashfs-tools/Makefile
         COMMAND ${SED} -i "/cp unsquashfs/d" squashfs-tools/Makefile
-        BUILD_COMMAND env CC=${CC} CXX=${CXX} LDFLAGS=${LDFLAGS} ${MAKE} -C squashfs-tools/ XZ_SUPPORT=1 mksquashfs
+        BUILD_COMMAND env CC=${CC} CXX=${CXX} LDFLAGS=${LDFLAGS} ${MAKE} -C squashfs-tools/ XZ_SUPPORT=1 ZSTD_SUPPORT=1 mksquashfs
         # ${MAKE} install unfortunately expects unsquashfs to be built as well, hence can't install the binary
         # therefore using built file in SOURCE_DIR
         # TODO: implement building out of source
@@ -85,5 +103,11 @@ endif()
 if(TARGET xz-EXTERNAL)
     if(TARGET mksquashfs)
         ExternalProject_Add_StepDependencies(mksquashfs configure xz-EXTERNAL)
+    endif()
+endif()
+
+if(TARGET zstd-EXTERNAL)
+    if(TARGET mksquashfs)
+        ExternalProject_Add_StepDependencies(mksquashfs configure zstd-EXTERNAL)
     endif()
 endif()

@@ -37,6 +37,7 @@ target_link_libraries(appimagetool
     libglib
     libzlib
     xz
+    zstd
 )
 
 target_compile_definitions(appimagetool
