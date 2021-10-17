@@ -143,7 +143,7 @@ int sfs_mksquashfs(char *source, char *destination, int offset) {
         offset_string = g_strdup_printf("%i", offset);
 
         char* args[32];
-        bool use_xz = strcmp(sqfs_comp, "xz") >= 0;
+        bool use_xz = strcmp(sqfs_comp, "xz") == 0;
 
         int i = 0;
 #ifndef AUXILIARY_FILES_DESTINATION
@@ -157,10 +157,7 @@ int sfs_mksquashfs(char *source, char *destination, int offset) {
         args[i++] = offset_string;
         args[i++] = "-comp";
 
-        if (use_xz)
-            args[i++] = "xz";
-        else
-            args[i++] = sqfs_comp;
+        args[i++] = sqfs_comp;
 
         args[i++] = "-root-owned";
         args[i++] = "-noappend";
