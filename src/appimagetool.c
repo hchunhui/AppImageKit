@@ -53,7 +53,7 @@
 #include <limits.h>
 #include <stdbool.h>
 
-#include "appimage/appimage.h"
+#include "appimage/appimage_shared.h"
 
 #ifdef __linux__
 #define HAVE_BINARY_RUNTIME
