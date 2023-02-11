@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ARCH: ['x86_64', 'i386', 'armhf', 'aarch64']
+        ARCH: ['x86_64', 'i386']
 
     env:
       ARCH: ${{ matrix.ARCH }}
@@ -53,6 +53,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libfuse2
           wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
           chmod +x pyuploadtool-x86_64.AppImage
           ./pyuploadtool-x86_64.AppImage **/appimagetool*.AppImage* **/AppRun* **/runtime-*
